@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Red Unit
   - Blue Unit
+  - Tile
+  - Resource Tile
   layers:
   - Default
   - TransparentFX
@@ -13,8 +15,8 @@ TagManager:
   - 
   - Water
   - UI
+  - Units
   - Tiles
-  - 
   - 
   - 
   - 

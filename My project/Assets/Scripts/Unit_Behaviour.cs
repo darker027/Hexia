@@ -5,73 +5,65 @@ using UnityEngine;
 public class Unit_Behaviour : MonoBehaviour
 {
     [SerializeField] private GameMechanic_Controller Main_Controller;
-    [SerializeField] private LayerMask layerMask;
+    [SerializeField] private LayerMask TileMask;
 
-
-    /*[HideInInspector] */public GameObject tile;
-    [HideInInspector] public bool selected;
+    [Header("Unit Stat")]
+    /*[HideInInspector] */ public GameObject tile;
 
     public string piece;
-    
+
+    public int moveRange;
+
+
+
     // Start is called before the first frame update
     void Start()
     {
         Main_Controller = GameObject.Find("Game Controller").GetComponent<GameMechanic_Controller>();
-
-        if(Physics.Raycast(transform.position, -Vector3.up, out RaycastHit tileHit, 5.0f, layerMask))
-        {
-            tile = tileHit.transform.gameObject.transform.parent.gameObject;
-            tile.transform.gameObject.GetComponentInParent<Tile_Behaviour>().currentUnit = this.gameObject;
-        }
+        TileMask = LayerMask.GetMask("Tiles");
     }
 
     // Update is called once per frame
     void Update()
     {
-        //if(selected && Main_Controller.selectedUnit == this.gameObject)
-        //{
-        //    Ray ray = CameraBase_Controller.MainCam_Instance.camera.ScreenPointToRay(Input.mousePosition);
-
-        //    if (Physics.Raycast(ray, out RaycastHit rayHit, float.MaxValue, layerMask))
-        //    {
-        //        if (Input.GetMouseButtonDown(0))
-        //        {
-        //            gameObject.transform.position = Vector3.MoveTowards(transform.position, new Vector3(rayHit.transform.gameObject.transform.position.x, transform.position.y, rayHit.transform.gameObject.transform.position.z), float.MaxValue);
-        //            Debug.Log("Move to : " + rayHit.transform.gameObject.transform.parent.name);
-
-        //            if(rayHit.transform.gameObject != tile)
-        //            {
-        //                tile = rayHit.transform.gameObject;
-
-        //                if(gameObject.tag == "Red Unit")
-        //                {
-        //                    Main_Controller.playing_Turn = GameMechanic_Controller.Turn.bluePlayer;
-        //                    selected = false;
-        //                }
-        //                if(gameObject.tag == "Blue Unit")
-        //                {
-        //                    Main_Controller.playing_Turn = GameMechanic_Controller.Turn.redPlayer;
-        //                    selected = false;
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
+        if(tile == null)
+        {
+            if (Physics.Raycast(transform.position, -Vector3.up, out RaycastHit tileHit, 5.0f, TileMask))
+            {
+                tile = tileHit.transform.gameObject.transform.parent.gameObject;
+                tile.transform.gameObject.GetComponentInParent<Tile_Behaviour>().currentUnit = this.gameObject;
+            }
+        }
     }
 
     private void OnMouseDown()
     {
-        if (selected)
+        StartCoroutine(GamePhase());
+    }
+
+    private IEnumerator GamePhase()
+    {
+        if (Main_Controller.playing_Phase == GameMechanic_Controller.Phase.Selecting && Main_Controller.selectedUnit == null)
         {
-            selected = false;
-            Main_Controller.selectedUnit = null;
-            Debug.Log("Deselected : " + gameObject.name);
+            Main_Controller.selectedUnit = this;
+            yield return new WaitForSeconds(0.25f);
+            Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Moving;
         }
         else
         {
-            selected = true;
-            Main_Controller.selectedUnit = this;
-            Debug.Log("Selecting : " + gameObject.name);
+            if (Main_Controller.playing_Phase == GameMechanic_Controller.Phase.Moving && Main_Controller.selectedUnit != this)
+            {
+                Main_Controller.moveClear = true;
+                yield return new WaitForSeconds(0.25f);
+                Main_Controller.selectedUnit = this;
+                Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Moving;
+            }
+            else
+            {
+                Main_Controller.selectedUnit = null;
+                yield return new WaitForSeconds(0.25f);
+                Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Selecting;
+            }
         }
     }
 }
