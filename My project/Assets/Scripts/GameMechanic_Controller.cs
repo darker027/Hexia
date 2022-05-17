@@ -18,6 +18,8 @@ public class GameMechanic_Controller : MonoBehaviour
 
     private GameObject[] redUnits;
     private GameObject[] blueUnits;
+    [SerializeField] private GameObject[] advanceRedPieces;
+    [SerializeField] private GameObject[] advanceBluePieces;
 
     [Header("Player turn")]
     public Unit_Behaviour selectedUnit;
@@ -32,10 +34,14 @@ public class GameMechanic_Controller : MonoBehaviour
 
     public bool completedPoint;
 
+    private bool playUI;
+    private bool moveUnit;
+    private bool upgradeUnit;
+
     [Header("Unit Movement")]
     [SerializeField] private LayerMask raycastMask;
 
-    public enum Phase { Selecting, Moving }
+    public enum Phase { Selecting, Playing }
     public Phase playing_Phase;
 
     [Header("Unit Indicator")]
@@ -45,14 +51,18 @@ public class GameMechanic_Controller : MonoBehaviour
     private List<GameObject> walkableTiles = new List<GameObject>();
     private List<GameObject> indicatorTiles = new List<GameObject>();
 
-    /*[HideInInspector] */public bool moveClear;
+    [HideInInspector] public bool moveClear;
     private bool moveShowing;
+
+    private Button[] unitButton;
 
     [Header("UI")]
     [SerializeField] private TMPro.TextMeshProUGUI victoryText;
     [SerializeField] private TMPro.TextMeshProUGUI bluePointText;
     [SerializeField] private TMPro.TextMeshProUGUI redPointText;
     [SerializeField] private Image turnColor;
+    [SerializeField] private GameObject upgradeCanvas;
+
 
     // Start is called before the first frame update
     void Start()
@@ -73,6 +83,7 @@ public class GameMechanic_Controller : MonoBehaviour
 
             if(!enableRed)
             {
+                redUnits = GameObject.FindGameObjectsWithTag("Red Unit");
                 foreach (GameObject units in redUnits)
                 {
                     if(units != null)
@@ -85,7 +96,8 @@ public class GameMechanic_Controller : MonoBehaviour
             }
             if(!disableBlue)
             {
-                foreach(GameObject units in blueUnits)
+                blueUnits = GameObject.FindGameObjectsWithTag("Blue Unit");
+                foreach (GameObject units in blueUnits)
                 {
                     if (units != null)
                         units.layer = 2;
@@ -96,35 +108,63 @@ public class GameMechanic_Controller : MonoBehaviour
 
             victoryText.text = "Red Victory";
 
-            if (playing_Phase == Phase.Moving && selectedUnit != null)
+            if (playing_Phase == Phase.Playing && selectedUnit != null)
             {
-                if (!moveShowing)
+                if(selectedUnit.piece == "Pawn")
                 {
-                    Unit_MoveShowing(selectedUnit.moveRange);
-                    moveShowing = true;
+                    if (!playUI)
+                    {
+                        unitButton = selectedUnit.gameObject.GetComponentsInChildren<Button>(includeInactive: gameObject);
+
+                        foreach (Button buttons in unitButton)
+                        {
+                            buttons.gameObject.SetActive(true);
+                        }
+
+                        playUI = true;
+                    }
                 }
                 else
                 {
-                    if (moveClear)
+                    moveUnit = true;
+                }
+
+                if (moveUnit && !upgradeUnit)
+                {
+                    if (!moveShowing)
                     {
-                        if (indicatorTiles != null && indicatorTiles.Count != 0)
+                        Unit_MoveShowing(selectedUnit.moveRange);
+                        moveShowing = true;
+                    }
+                    else
+                    {
+                        if (moveClear)
                         {
-                            foreach (GameObject movetile in indicatorTiles)
+                            if (indicatorTiles != null && indicatorTiles.Count != 0)
                             {
-                                Destroy(movetile);
+                                foreach (GameObject movetile in indicatorTiles)
+                                {
+                                    Destroy(movetile);
+                                }
                             }
+                            walkableTiles.Clear();
+                            moveClear = false;
+                            indicatorTiles.Clear();
+                            moveShowing = false;
                         }
-                        walkableTiles.Clear();
-                        moveClear = false;
-                        indicatorTiles.Clear();
-                        moveShowing = false;
+                    }
+
+                    if (Input.GetMouseButtonDown(0) && !moveClear)
+                    {
+                        Unit_Moving();
                     }
                 }
 
-                if (Input.GetMouseButtonDown(0) && !moveClear)
+                if(upgradeUnit && !moveUnit)
                 {
-                    Unit_Moving();
+                    upgradeCanvas.SetActive(true);
                 }
+                
             }
             else
             {
@@ -138,6 +178,19 @@ public class GameMechanic_Controller : MonoBehaviour
                     indicatorTiles.Clear();
                     moveShowing = false;
                 }
+
+                if(unitButton != null)
+                {
+                    foreach (Button buttons in unitButton)
+                    {
+                        if(buttons != null)
+                        {
+                            buttons.gameObject.SetActive(false);
+                        }
+                    }
+                    playUI = false;
+                }
+                moveUnit = false;
             }
         }
         else if(playing_Turn == Turn.bluePlayer)
@@ -147,6 +200,7 @@ public class GameMechanic_Controller : MonoBehaviour
 
             if (!enableBlue)
             {
+                blueUnits = GameObject.FindGameObjectsWithTag("Blue Unit");
                 foreach (GameObject units in blueUnits)
                 {
                     if (units != null)
@@ -157,6 +211,7 @@ public class GameMechanic_Controller : MonoBehaviour
             }
             if (!disableRed)
             {
+                redUnits = GameObject.FindGameObjectsWithTag("Red Unit");
                 foreach (GameObject units in redUnits)
                 {
                     if(units != null)
@@ -168,35 +223,61 @@ public class GameMechanic_Controller : MonoBehaviour
 
             victoryText.text = "Blue Victory";
 
-            if (playing_Phase == Phase.Moving && selectedUnit != null)
+            if (playing_Phase == Phase.Playing && selectedUnit != null)
             {
-                if(!moveShowing)
+                if (selectedUnit.piece == "Pawn")
                 {
-                    Unit_MoveShowing(selectedUnit.moveRange);
-                    moveShowing = true;
+                    if (!playUI)
+                    {
+                        unitButton = selectedUnit.gameObject.GetComponentsInChildren<Button>(includeInactive: gameObject);
+
+                        foreach (Button buttons in unitButton)
+                        {
+                            buttons.gameObject.SetActive(true);
+                        }
+
+                        playUI = true;
+                    }
                 }
                 else
                 {
-                    if(moveClear)
-                    {
-                        if (indicatorTiles != null && indicatorTiles.Count != 0)
-                        {
-                            foreach (GameObject movetile in indicatorTiles)
-                            {
-                                Destroy(movetile);
-                            }
-                        }
+                    moveUnit = true;
+                }
 
-                        walkableTiles.Clear();
-                        moveClear = false;
-                        indicatorTiles.Clear();
-                        moveShowing = false;
+                if (moveUnit && !upgradeUnit)
+                {
+                    if (!moveShowing)
+                    {
+                        Unit_MoveShowing(selectedUnit.moveRange);
+                        moveShowing = true;
+                    }
+                    else
+                    {
+                        if (moveClear)
+                        {
+                            if (indicatorTiles != null && indicatorTiles.Count != 0)
+                            {
+                                foreach (GameObject movetile in indicatorTiles)
+                                {
+                                    Destroy(movetile);
+                                }
+                            }
+                            walkableTiles.Clear();
+                            moveClear = false;
+                            indicatorTiles.Clear();
+                            moveShowing = false;
+                        }
+                    }
+
+                    if (Input.GetMouseButtonDown(0) && !moveClear)
+                    {
+                        Unit_Moving();
                     }
                 }
 
-                if(Input.GetMouseButtonDown(0))
+                if (upgradeUnit && !moveUnit)
                 {
-                    Unit_Moving();
+                    upgradeCanvas.SetActive(true);
                 }
             }
             else
@@ -211,6 +292,19 @@ public class GameMechanic_Controller : MonoBehaviour
                     indicatorTiles.Clear();
                     moveShowing = false;
                 }
+
+                if (unitButton != null)
+                {
+                    foreach (Button buttons in unitButton)
+                    {
+                        if(buttons != null)
+                        {
+                            buttons.gameObject.SetActive(false);
+                        }
+                    }
+                    playUI = false;
+                }
+                moveUnit = false;
             }
         }
         else if(playing_Turn == Turn.endTurn)
@@ -256,9 +350,16 @@ public class GameMechanic_Controller : MonoBehaviour
             victoryText.enabled = true;
         }
 
-        //
+        // - - - Debugging - - -
         bluePointText.text = bluePoint.ToString();
         redPointText.text = redPoint.ToString();
+
+        // - - - Cheat Code - - -
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            redPoint++;
+            bluePoint++;
+        }
     }
 
     private void Unit_MoveShowing(int unitMoveRange)
@@ -339,6 +440,120 @@ public class GameMechanic_Controller : MonoBehaviour
             playing_Turn = Turn.endTurn;
             playing_Phase = Phase.Selecting;
             selectedUnit = null;
+        }
+    }
+
+    public void MoveButton()
+    {
+        moveUnit = true;
+
+        foreach (Button buttons in unitButton)
+        {
+            buttons.gameObject.SetActive(false);
+        }
+    }
+
+    public void UpgradeButton()
+    {
+        upgradeUnit = true;
+
+        foreach (Button buttons in unitButton)
+        {
+            buttons.gameObject.SetActive(false);
+        }
+    }
+
+    public void KnightPiece(int index)
+    {
+        if(playing_Turn == Turn.redPlayer)
+        {
+            if (redPoint >= 3)
+            {
+                Instantiate(advanceRedPieces[index], selectedUnit.transform.position, Quaternion.identity);
+                Destroy(selectedUnit.gameObject);
+                redPoint -= 3;
+
+                playing_Turn = Turn.endTurn;
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+            else
+            {
+                upgradeCanvas.SetActive(false);
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+        }
+
+        if (playing_Turn == Turn.bluePlayer)
+        {
+            if (bluePoint >= 3)
+            {
+                Instantiate(advanceBluePieces[index], selectedUnit.transform.position, Quaternion.identity);
+                Destroy(selectedUnit.gameObject);
+                bluePoint -= 3;
+
+                playing_Turn = Turn.endTurn;
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+            else
+            {
+                upgradeCanvas.SetActive(false);
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+        }
+    }
+
+    public void RookPiece(int index)
+    {
+        if (playing_Turn == Turn.redPlayer)
+        {
+            if (redPoint >= 5)
+            {
+                Instantiate(advanceRedPieces[index], selectedUnit.transform.position, Quaternion.identity);
+                Destroy(selectedUnit.gameObject);
+                redPoint -= 5;
+
+                playing_Turn = Turn.endTurn;
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+            else
+            {
+                upgradeCanvas.SetActive(false);
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+        }
+
+        if (playing_Turn == Turn.bluePlayer)
+        {
+            if (bluePoint >= 5)
+            {
+                Instantiate(advanceBluePieces[index], selectedUnit.transform.position, Quaternion.identity);
+                Destroy(selectedUnit.gameObject);
+                bluePoint -= 5;
+
+                playing_Turn = Turn.endTurn;
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
+            else
+            {
+                upgradeCanvas.SetActive(false);
+                playing_Phase = Phase.Selecting;
+                upgradeUnit = false;
+                selectedUnit = null;
+            }
         }
     }
 }

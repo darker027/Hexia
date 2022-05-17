@@ -47,16 +47,18 @@ public class Unit_Behaviour : MonoBehaviour
         {
             Main_Controller.selectedUnit = this;
             yield return new WaitForSeconds(0.25f);
-            Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Moving;
+            Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Playing;
         }
         else
         {
-            if (Main_Controller.playing_Phase == GameMechanic_Controller.Phase.Moving && Main_Controller.selectedUnit != this)
+            if (Main_Controller.playing_Phase == GameMechanic_Controller.Phase.Playing && Main_Controller.selectedUnit != this)
             {
                 Main_Controller.moveClear = true;
                 yield return new WaitForSeconds(0.25f);
+                Main_Controller.selectedUnit = null;
+                yield return new WaitForSeconds(0.25f);
                 Main_Controller.selectedUnit = this;
-                Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Moving;
+                Main_Controller.playing_Phase = GameMechanic_Controller.Phase.Playing;
             }
             else
             {
